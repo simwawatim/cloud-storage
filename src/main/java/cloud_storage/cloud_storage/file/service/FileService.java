@@ -27,7 +27,12 @@ public class FileService {
         this.folderRepository = folderRepository;
     }
 
+    // Upload with optional custom filename
     public UploadedFile uploadFile(UUID folderId, MultipartFile file) throws IOException {
+        return uploadFile(folderId, file, null);
+    }
+
+    public UploadedFile uploadFile(UUID folderId, MultipartFile file, String customName) throws IOException {
         // Get folder
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new RuntimeException("Folder not found"));
@@ -39,14 +44,17 @@ public class FileService {
             Files.createDirectories(folderDir);
         }
 
+        // Determine filename
+        String filename = (customName != null && !customName.isEmpty()) ? customName : file.getOriginalFilename();
+
         // Save file on disk
-        String filePath = folderPath + "/" + file.getOriginalFilename();
+        String filePath = folderPath + "/" + filename;
         Path destination = Paths.get(filePath);
         file.transferTo(destination);
 
         // Save metadata in DB
         UploadedFile uploadedFile = new UploadedFile(
-                file.getOriginalFilename(),
+                filename,
                 file.getContentType(),
                 file.getSize(),
                 filePath,

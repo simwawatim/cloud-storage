@@ -32,19 +32,25 @@ public class FileController {
         this.fileService = fileService;
     }
 
-    // Upload a file to a folder
+    // Upload a file (optional custom filename)
     @PostMapping("/upload/{folderId}")
-    public UploadedFile uploadFile(@PathVariable UUID folderId, @RequestParam("file") MultipartFile file) throws IOException {
-        return fileService.uploadFile(folderId, file);
+    public UploadedFileDTO uploadFile(
+            @PathVariable UUID folderId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "name", required = false) String customName
+    ) throws IOException {
+        UploadedFile uploadedFile = fileService.uploadFile(folderId, file, customName);
+        return new UploadedFileDTO(uploadedFile); // return DTO
     }
 
-   @GetMapping("/folder/{folderId}")
+
+    // List files in a folder
+    @GetMapping("/folder/{folderId}")
     public List<UploadedFileDTO> getFilesByFolder(@PathVariable UUID folderId) {
         return fileService.getFilesByFolder(folderId).stream()
                 .map(UploadedFileDTO::new)
                 .collect(Collectors.toList());
     }
-
 
     // Download a file by fileId
     @GetMapping("/{fileId}")

@@ -1,4 +1,5 @@
 package cloud_storage.cloud_storage.users.controller;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,26 +25,38 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
+    // Register new user
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody AppUser user) {
         if (userRepo.findByUsername(user.getUsername()) != null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body("Username already exists!");
+            return ResponseEntity.badRequest().body("Username already exists!");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepo.save(user);
 
-        return ResponseEntity.ok("User registered!");
+        return ResponseEntity.ok("User registered successfully!");
     }
 
+    // Login and return JWT token
     @PostMapping("/login")
-    public String login(@RequestBody AppUser user) {
+    public ResponseEntity<?> login(@RequestBody AppUser user) {
         AppUser existing = userRepo.findByUsername(user.getUsername());
+
         if (existing != null && passwordEncoder.matches(user.getPassword(), existing.getPassword())) {
-            return jwtUtil.generateToken(existing.getUsername());
+            String token = jwtUtil.generateToken(existing.getUsername());
+            return ResponseEntity.ok(new AuthResponse(token));
         }
-        return "Invalid credentials";
+
+        return ResponseEntity.status(401).body("Invalid username or password");
+    }
+
+    // DTO for JWT response
+    static class AuthResponse {
+        private String token;
+
+        public AuthResponse(String token) { this.token = token; }
+        public String getToken() { return token; }
+        public void setToken(String token) { this.token = token; }
     }
 }
